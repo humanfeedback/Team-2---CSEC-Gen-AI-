@@ -1,0 +1,5 @@
+[dependencies]
+winreg = { version = "0.10", optional = true }
+
+[target.'cfg(target_os = "windows")'.dependencies]
+winreg = "0.10"
