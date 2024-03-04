@@ -49,6 +49,41 @@ To deploy the keylogger:
 
 **Warning:** Be mindful of anti-virus and security software on the victim machine that may block or detect the keylogger's operation. Disabling such software poses significant security risks and should be done with caution and appropriate permissions.
 
+
+### Data Storage
+
+#### Log File Details
+
+- **Location**: The keystroke data is logged to a file named `keystrokes_log.txt`, which is located in the same directory as the application's executable.
+- **Format**: Each keystroke is logged in plain text, alongside a timestamp indicating when the key was pressed. The data format is designed to be easily readable and accessible for analysis.
+
+### Managing Logged Data
+
+#### Accessing Logged Data
+
+Users can access the keystroke log by navigating to the application directory and opening the `keystrokes_log.txt` file with any standard text editor. This allows for easy review and analysis of typing patterns and productivity.
+
+#### Data Deletion
+
+To delete the logged keystroke data, users can simply remove the `keystrokes_log.txt` file from the application directory. It's recommended to regularly monitor and clear this file to manage data accumulation and maintain privacy.
+
+### Security and Privacy Considerations
+
+#### Data Security
+
+While the keystroke log is stored locally to prioritize user privacy, it may contain sensitive information. Users are advised to take the following steps to secure their data:
+
+- Store the log file in a secure location, preferably on an encrypted drive.
+- Regularly review the keystroke log to identify and remove any sensitive information.
+
+#### Privacy Implications
+
+Given the potential sensitivity of keystroke data, it's crucial to manage the log file responsibly. Users should:
+
+- Regularly delete the keystroke log to prevent unnecessary data retention.
+- Ensure that the application is used in a manner that complies with local privacy laws and regulations, particularly regarding consent.
+
+
 ## Legal and Ethical Warning
 
 This tool is provided for educational purposes and authorized security testing only. Unauthorized use of this software to intercept or collect data from individuals without their explicit consent is illegal and unethical. It is the user's responsibility to comply with all applicable laws and ethics guidelines when using or deploying this software.
