@@ -4,6 +4,8 @@
 
 This project outlines the development and deployment of a basic keylogger application written in Rust. The keylogger is designed to capture and transmit keystrokes from a victim's machine to a server for collection. This document provides a step-by-step guide on setting up and running the keylogger, along with necessary precautions and requirements.
 
+**Note: the final files in the proper Rust project directory format is in the `final` directory. The Rust project for listener and the keylogger parts are in there. The rest is just code generated as a means to get to a final product.**
+
 ## Prerequisites
 
 Before proceeding, ensure you have the following installed on your development machine:
